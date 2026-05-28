@@ -8,8 +8,12 @@ class Layer:
         
         
     def decapsulate(self, packet):
-        data = packet.pop()
-        return data
+        last_item = -1
+        
+        if packet[last_item] == 'Frame Footer':
+            packet.pop()
+    
+        return packet.pop()
 
 
 class Server:
@@ -19,6 +23,11 @@ class Server:
         self.HOST = host
         self.PORT = port
         self.MAX_TRANSFER_SIZE = 1024
+        
+        # Variables for later use
+        self.TCP = None
+        self.CONNECTION = None
+        self.MESSAGE = None
     
     
     def setup(self):
@@ -30,22 +39,23 @@ class Server:
         self.TCP.bind(hook)
 
         # Listen on port
-        self.TCP.listen(1)
+        max_connections = 1
+        self.TCP.listen(max_connections)
         
         
-    def awaitConnection(self):
+    def await_connection(self):
         print("Waiting for connection...")
         self.CONNECTION, client = self.TCP.accept()
         
         print("Connected to client IP: {}".format(client))
     
     
-    def awaitMessage(self):
-        # Receive and print data a few bytes at a time, as long as the client is sending something
-        self.MESSAGE = self.CONNECTION.recv(self.MAX_TRANSFER_SIZE)
-        
-        # Try to decode received message, if it fails, it is bytes-type data
+    def await_message(self):
         try:
+            # Receive and print data a few bytes at a time, as long as the client is sending something
+            self.MESSAGE = self.CONNECTION.recv(self.MAX_TRANSFER_SIZE)
+            
+            # Try to decode received message, if it fails, it is bytes-type data
             self.MESSAGE = self.MESSAGE.decode()
         except (UnicodeDecodeError, AttributeError):
             self.MESSAGE = pickle.loads(self.MESSAGE)
@@ -67,16 +77,16 @@ class Server:
         
         
     def stack(self):
-        netInterface = Layer(self.MESSAGE)
-        frame = netInterface.PDU
+        # Normally one would not write repetitive code, but this was done to demonstrate the process clearly:
+        net_interface = Layer(self.MESSAGE)
+        frame = net_interface.PDU
         print("Frame received:")
         print("{}\n".format(frame))
         
-        network = Layer(netInterface.decapsulate(frame))
+        network = Layer(net_interface.decapsulate(frame))
         packet = network.PDU
         print("Network Interface Layer - Processed Frame Header:")
         print("{}\n".format(packet))
-        packet = network.decapsulate(frame[:-1])
         
         transport = Layer(network.decapsulate(packet))
         segment = transport.PDU
@@ -94,41 +104,56 @@ class Server:
         
         print("Message Received: {}\n".format(message))
         
-        
-    def printMsg(self):
-        print("Received: {}\n".format(self.MESSAGE))
     
+    def close_socket(self):
+        print("Closing connection...")
+        try:
+            self.CONNECTION.shutdown(socket.SHUT_RDWR)
+        except (OSError, socket.error):
+            print("Already closed.\n")
+        finally:
+            print("Closing socket...")
+            self.CONNECTION.close()
+            self.TCP.close()
+
+
+def main():
+    host = 'localhost'
+    port = 3333
+    server = Server(host, port)
+    server.setup()
+    server.await_connection()
     
-    def closeSocket(self):
-        print("Closing socket...")
-        self.CONNECTION.close()
+    try:
+        while True:
+            server.await_message()
+            
+            if not server.MESSAGE:
+                break
+            
+            if server.MESSAGE == 'ping':
+                server.ping()
+                
+            elif server.MESSAGE == 'SYN':
+                server.handshake()
+                
+            elif isinstance(server.MESSAGE, list) == True:
+                server.stack()
+            
+            else:
+                print("Received: {}\n".format(server.MESSAGE))
+    except (KeyboardInterrupt):
+        print("\nConnection interrupted by user.\n")
+    except (BrokenPipeError, ConnectionResetError):
+        print("Error or socket was closed by client earlier than expected.\n")
+    except (Exception):
+        print("Unexpected error during main runtime.\n")
+    
+    finally:
+        server.close_socket()
         print("Quitting the program...")
 
 
-server = Server('127.0.0.1', 3333)
-server.setup()
-server.awaitConnection()
-
-try:     
-    while True:
+if __name__ == "__main__":
+    main()
     
-        server.awaitMessage()
-        
-        if not server.MESSAGE:
-            break
-        
-        if server.MESSAGE == 'ping':
-            server.ping()
-            
-        elif server.MESSAGE == 'SYN':
-            server.handshake()
-            
-        elif isinstance(server.MESSAGE, list) == True:
-            server.stack()
-        
-        else:
-            server.printMsg()
-
-finally:
-    server.closeSocket()
-

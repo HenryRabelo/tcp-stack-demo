@@ -1,9 +1,12 @@
 import socket
 import pickle
+import time
 
 class Layer:
-    def setPDU(self, data):
-        self.PDU = data
+
+    def __init__(self):
+        self.PDU = None
+        
         
     def encapsulate(self, data, header):
         packet = []
@@ -19,19 +22,23 @@ class Layer:
 class Client:
 
     def __init__(self, host, port):
+        # Initial server variables
         self.HOST = host
         self.PORT = port
         self.MAX_TRANSFER_SIZE = 1024
+        
+        # Variables for later use
+        self.COMMAND = None
+        self.CONNECTION = None
+        self.MESSAGE = None
     
     
     def setup(self):
         # Create a connection to the server application on port
         self.CONNECTION = socket.create_connection((self.HOST, self.PORT))
-        
-        print("Type 'help' to see the manual.\n")
     
     
-    def awaitCommand(self):
+    def await_command(self):
         self.COMMAND = input("client@{}~> ".format(self.HOST))
     
     
@@ -48,7 +55,6 @@ class Client:
         
     def ping(self):
         self.CONNECTION.sendall(self.COMMAND.encode())
-
         received = self.CONNECTION.recv(self.MAX_TRANSFER_SIZE).decode()
         print("{}\n".format(received))
         
@@ -74,13 +80,13 @@ class Client:
         message = input("Write your message: ")
         
         application = Layer()
-        application.setPDU([message])
+        application.PDU = [message]
         data = application.PDU
         print("\nApplication Layer - Created Data:")
         print("{}\n".format(data))
         
         transport = Layer()
-        transport.setPDU(transport.encapsulate(data, 'TCP'))
+        transport.PDU = transport.encapsulate(data, 'TCP')
         segment = transport.PDU
         print("Transport Layer - Created Segment:")
         print("{}\n".format(segment))
@@ -89,13 +95,13 @@ class Client:
         self.handshake()
         
         network = Layer()
-        network.setPDU(network.encapsulate(segment, 'IP'))
+        network.PDU = network.encapsulate(segment, 'IP')
         packet = network.PDU
         print("Network Layer - Created Packet:")
         print("{}\n".format(packet))
         
         netInterface = Layer()
-        netInterface.setPDU(netInterface.encapsulate(packet, 'Frame'))
+        netInterface.PDU = netInterface.encapsulate(packet, 'Frame')
         frame = netInterface.PDU
         print("Network Interface Layer - Created Frame (Frame Footer implied):")
         print("{}\n".format(frame))
@@ -104,45 +110,83 @@ class Client:
         print("Frame sent.\n")
         
         
-    def sendMsg(self):
+    def send_msg(self):
         self.CONNECTION.sendall(self.COMMAND.encode())
     
     
-    def closeSocket(self):
-        print("Closing socket...")
-        self.CONNECTION.close()
+    def close_socket(self):
+        try:
+            print("Closing socket...")
+            self.CONNECTION.close()
+            self.CONNECTION = None
+        except (OSError, socket.error):
+            print("Already closed.\n")
+
+
+def main():
+    host = "localhost"
+    port = 3333
+    client = Client(host, port)
+    client.setup()
+    
+    print("Type 'help' to see the manual.\n")
+    
+    try:
+        while True:
+        
+            try:
+                client.await_command()
+        
+                if not client.COMMAND:
+                    break
+        
+                if client.COMMAND == "help":
+                    client.help()
+        
+                elif client.COMMAND == "ping":
+                    client.ping()
+        
+                elif client.COMMAND == "handshake":
+                    client.handshake()
+                    
+                elif client.COMMAND == "stack":
+                    client.stack()
+                
+                elif client.COMMAND == "exit":
+                    break
+                
+                else:
+                    client.send_msg()
+            except (socket.error, BrokenPipeError, ConnectionResetError):
+                print("Error connecting to server. Attempting to reconnect...\n")
+                max_retries = 5
+                delay = 1
+                
+                client.close_socket()
+                
+                for i in range(max_retries):
+                    client.setup()
+                    if client.CONNECTION is not None:
+                        break
+                    else:
+                        time.sleep(delay)
+                
+                if client.CONNECTION is None:
+                    print("Reconnection timeout.\n")
+                    break
+                else:
+                    print("Reconnection successful.\n")
+                
+    except (KeyboardInterrupt):
+        print("\nProgram interrupted by user.\n")
+    except (Exception):
+        print("Unexpected error during main runtime.\n")
+    
+    finally:
+        client.close_socket()
         print("Quitting the program...")
-    
-    
-client = Client('localhost', 3333)
-client.setup()
 
-try:
-    while True:
 
-        client.awaitCommand()
-
-        if not client.COMMAND:
-            break
-
-        if client.COMMAND == 'help':
-            client.help()
-
-        elif client.COMMAND == 'ping':
-            client.ping()
-
-        elif client.COMMAND == 'handshake':
-            client.handshake()
-            
-        elif client.COMMAND == 'stack':
-            client.stack()
-        
-        elif client.COMMAND == 'exit':
-            break
-        
-        else:
-            client.sendMsg()
-        
-finally:
-    client.closeSocket()
+if __name__ == "__main__":
+    main()
 
