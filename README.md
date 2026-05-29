@@ -77,11 +77,11 @@ The Client also processes a Help command, which informs the user of the availabl
 
 | Commands | Description |
 | ----- | ----- |
-| [ text ] | Send regular messages to the Server application.
+| help | See available commands. |
 | ping | Asks for the Server application IP address. |
 | handshake | Use messages to simulate / demonstrate the TCP Three-Way Handshake process. |
 | stack | Simulate / demonstrate the TCP/IP Stack encapsulation and sending process. |
-| help | See available commands. |
+| [ text ] | Send regular messages to the Server application. |
 | exit | Closes the Client application socket and exits the program. |
 
 #### Object Methods
@@ -89,14 +89,15 @@ Being an object oriented program, it tries to hide all the complexity it can ins
 
 | Method | Description |
 | ----- | ----- |
-| setup() | Sets up a connection to the Server application through its configured IP and Port. |
-| awaitCommand() | Instructs to await an user Input. |
-| closeSocket() | Closes the application's socket connection. |
-| ping() | Instructs to send the Server application a Ping request and possibly receive an answer from the Server. |
-| handshake() | Sends a 'SYN' message to the server application and awaits for a 'SYN' and an 'ACK' message. Then, it sends the server an 'ACK'. |
-| stack() | Coordenates and displays the process of Stacking lists and pre-determined messages and sends the result to the Server. |
 | encapsulate() | Uses the Stack data structure to insert pre-determined messages and data inside a list, as a means to encapsulate them. |
-| sendMsg() | Sends the Server application a previously collected message. |
+| setup() | Sets up a connection to the Server application through the object's configured Address and Port. |
+| await_command() | Instructs to await user Input. |
+| await_response() | Receives and decodes JSON encoded responses from the Server application through the previously established connection. |
+| ping() | Instructs to send the Server application a Ping request and receive an answer, simulating a ping request. |
+| handshake() | Sends a 'SYN' message to the Server application and awaits for a 'SYN' and an 'ACK' message. Then, sends the Server an 'ACK'. This simulates the TCP 3-Way Handshake |
+| stack() | Coordenates and displays the process of inserting elements in a list and sends the result to the Server, simulating the TCP/IP Stack layer while sending PDUs. |
+| send_msg() | Wrapper that sends the Server application data through JSON encoded requests. |
+| close_socket() | Closes the application's socket connection. |
 
 [![Back to the Top Badge](https://custom-icon-badges.demolab.com/badge/Back_to_the_Top-171515?logo=chevron-up)](#tcpip-stack-demonstration)
 
@@ -122,15 +123,14 @@ Being an object oriented program, it tries to hide all the complexity it can ins
 
 | Method | Description |
 | ----- | ----- |
-| setup() | Sets up a TCP/IP server, binds an address and port to the server socket and listens for incoming connections on said port. |
-| awaitConnection() | Instructs to accept incoming connections. |
-| awaitMessage() | Receives incoming messages through a previously established connection. |
-| closeSocket() | Closes the application's socket connection. |
-| ping() | Sends the Client application the configured IP address. |
-| handshake() | Sends the Client application a 'SYN' and an 'ACK' message. |
-| stack() | Coordenates and displays the process of removing elements from a list. |
 | decapsulate() | Removes the last added item on a list and returns said list. |
-| printMsg() | Displays the received message as output. |
+| setup() | Sets up a TCP/IP connection, binds the passed address and port to the socket and listens for incoming connections. |
+| await_connection() | Instructs to accept incoming connections. |
+| await_message() | Receives and decodes incoming JSON encoded messages through the previously established connection. |
+| ping() | Sends the Client application the configured IP address, simulating a ping request. |
+| handshake() | Sends the Client application a 'SYN' and an 'ACK' message, simulating the TCP 3-Way Handshake. |
+| stack() | Coordenates and displays the process of removing received elements from a list, simulating the TCP/IP Stack layer while receiving PDUs. |
+| close_socket() | Closes the application's connection and socket. |
 
 [![Back to the Top Badge](https://custom-icon-badges.demolab.com/badge/Back_to_the_Top-171515?logo=chevron-up)](#tcpip-stack-demonstration)
 
