@@ -100,9 +100,9 @@ class Client:
         print("Network Layer - Created Packet:")
         print("{}\n".format(packet))
         
-        netInterface = Layer()
-        netInterface.PDU = netInterface.encapsulate(packet, 'Frame')
-        frame = netInterface.PDU
+        net_interface = Layer()
+        net_interface.PDU = net_interface.encapsulate(packet, 'Frame')
+        frame = net_interface.PDU
         print("Network Interface Layer - Created Frame (Frame Footer implied):")
         print("{}\n".format(frame))
         

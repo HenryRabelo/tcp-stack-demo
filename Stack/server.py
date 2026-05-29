@@ -118,7 +118,7 @@ class Server:
 
 
 def main():
-    host = 'localhost'
+    host = "localhost"
     port = 3333
     server = Server(host, port)
     server.setup()
