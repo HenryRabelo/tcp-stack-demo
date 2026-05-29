@@ -42,7 +42,7 @@ python3 client.py
 ```
 
 > ###### Dependencies:
-> This project depends on `python3` and the following python libraries: `socket` `pickle`
+> This project depends on `python3` and the following native python libraries: `socket` `json`
 
 ### How to Use it
 Once the client & server applications have connected, input your commands on the client application. The main function is the `stack` command, which simulates visually the encapsulation process of the TCP / IP Stack, while the `handshake` command simulates visually the TCP handshake process.
