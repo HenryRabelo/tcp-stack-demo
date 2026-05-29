@@ -1,10 +1,10 @@
 import socket
-import pickle
-import time
+import json
 
 class Layer:
 
     def __init__(self):
+        # Initial Layer variables
         self.PDU = None
         
         
@@ -22,7 +22,7 @@ class Layer:
 class Client:
 
     def __init__(self, host, port):
-        # Initial server variables
+        # Initial Client variables
         self.HOST = host
         self.PORT = port
         self.MAX_TRANSFER_SIZE = 1024
@@ -34,7 +34,7 @@ class Client:
     
     
     def setup(self):
-        # Create a connection to the server application on port
+        # Create a connection to the server program on defined address and port
         self.CONNECTION = socket.create_connection((self.HOST, self.PORT))
     
     
@@ -42,40 +42,44 @@ class Client:
         self.COMMAND = input("client@{}~> ".format(self.HOST))
     
     
-    def help(self):
-        print("\nOPTIONS")
-        print("     help                See the manual.")
-        print("     ping                Receive the server IP.")
-        print("     handshake           Simulate a TCP handshake.")
-        print("     stack               Simulate the TCP/IP encapsulation process.")
-        print("     [ text ]            Send message to server.")
-        print("     exit, [ empty ]     Quit the program.")
-        print("")
-        
-        
+    def await_response(self):
+        try:
+            # Receive and print data a few bytes at a time, as long as the client is sending something
+            received = self.CONNECTION.recv(self.MAX_TRANSFER_SIZE)
+            
+            # Try to decode received message
+            self.MESSAGE = json.loads(received.decode())
+        except (json.JSONDecodeError, AttributeError):
+            print("Data not in a valid JSON format or connection error.\n")
+            self.CONNECTION.close()
+    
+    
     def ping(self):
-        self.CONNECTION.sendall(self.COMMAND.encode())
-        received = self.CONNECTION.recv(self.MAX_TRANSFER_SIZE).decode()
-        print("{}\n".format(received))
-        
-        
+        self.send_msg(self.COMMAND)
+        self.await_response()
+        print("{}\n".format(self.MESSAGE))
+    
+    
     def handshake(self):
-        self.CONNECTION.sendall('SYN'.encode())
+        self.send_msg('SYN')
         print("'SYN' sent.")
         
-        received1 = self.CONNECTION.recv(self.MAX_TRANSFER_SIZE).decode()
-        received2 = self.CONNECTION.recv(self.MAX_TRANSFER_SIZE).decode()
+        self.await_response()
+        received1 = self.MESSAGE
+        
+        self.await_response()
+        received2 = self.MESSAGE
         
         if received1 == 'SYN' and received2 == 'ACK':
             print("{} received.".format(received1))
             print("{} received.".format(received2))
             
-            self.CONNECTION.sendall('ACK'.encode())
+            self.send_msg('ACK')
             print("'ACK' sent.\n")
         else:
             print("Error during Three Way Handshake.")
-        
-        
+    
+    
     def stack(self):
         message = input("Write your message: ")
         
@@ -106,12 +110,12 @@ class Client:
         print("Network Interface Layer - Created Frame (Frame Footer implied):")
         print("{}\n".format(frame))
         
-        self.CONNECTION.sendall(pickle.dumps(frame))
+        self.send_msg(frame)
         print("Frame sent.\n")
-        
-        
-    def send_msg(self):
-        self.CONNECTION.sendall(self.COMMAND.encode())
+    
+    
+    def send_msg(self, data):
+        self.CONNECTION.sendall(json.dumps(data).encode())
     
     
     def close_socket(self):
@@ -121,6 +125,17 @@ class Client:
             self.CONNECTION = None
         except (OSError, socket.error):
             print("Already closed.\n")
+    
+    
+    def help(self):
+        print("\nOPTIONS")
+        print("     help                See the manual.")
+        print("     ping                Receive the server IP.")
+        print("     handshake           Simulate a TCP handshake.")
+        print("     stack               Simulate the TCP/IP encapsulation process.")
+        print("     [ text ]            Send message to server.")
+        print("     exit, [ empty ]     Quit the program.")
+        print("")
 
 
 def main():
@@ -156,11 +171,10 @@ def main():
                     break
                 
                 else:
-                    client.send_msg()
+                    client.send_msg(client.COMMAND)
             except (socket.error, BrokenPipeError, ConnectionResetError):
                 print("Error connecting to server. Attempting to reconnect...\n")
                 max_retries = 5
-                delay = 1
                 
                 client.close_socket()
                 
@@ -168,8 +182,6 @@ def main():
                     client.setup()
                     if client.CONNECTION is not None:
                         break
-                    else:
-                        time.sleep(delay)
                 
                 if client.CONNECTION is None:
                     print("Reconnection timeout.\n")
