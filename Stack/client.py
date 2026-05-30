@@ -10,7 +10,10 @@ class Layer:
         
     def encapsulate(self, data, header):
         packet = []
-        packet.append("{} Header".format(header))
+        
+        if header is not None:
+            packet.append("{} Header".format(header))
+            
         packet.append(data)
         
         if header == 'Frame':
@@ -84,7 +87,7 @@ class Client:
         message = input("Write your message: ")
         
         application = Layer()
-        application.PDU = [message]
+        application.PDU = application.encapsulate(message, None)
         data = application.PDU
         print("\nApplication Layer - Created Data:")
         print("{}\n".format(data))
