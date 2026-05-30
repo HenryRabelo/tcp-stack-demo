@@ -94,7 +94,7 @@ Being an object oriented program, it tries to hide all the complexity it can ins
 | await_command() | Instructs to await user Input. |
 | await_response() | Receives and decodes JSON encoded responses from the Server application through the previously established connection. |
 | ping() | Instructs to send the Server application a Ping request and receive an answer, simulating a ping request. |
-| handshake() | Sends a 'SYN' message to the Server application and awaits for a 'SYN' and an 'ACK' message. Then, sends the Server an 'ACK'. This simulates the TCP 3-Way Handshake |
+| handshake() | Sends a 'SYN' message to the Server application and awaits for a 'SYN' and an 'ACK' message. Then, sends the Server an 'ACK'. This simulates the TCP 3-Way Handshake. |
 | stack() | Coordenates and displays the process of inserting elements in a list and sends the result to the Server, simulating the TCP/IP Stack layer while sending PDUs. |
 | send_msg() | Wrapper that sends the Server application data through JSON encoded requests. |
 | close_socket() | Closes the application's socket connection. |
